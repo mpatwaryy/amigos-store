@@ -1,38 +1,194 @@
-.App {
-  text-align: center;
+/* Overlay Background (For Cart & Search) */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 900;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* Slide-in Cart */
+.cart-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 320px;
+  height: 100%;
+  background: white;
+  color: black;
+  box-shadow: -5px 0 10px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
+  padding: 20px;
+  z-index: 1000;
+}
+
+/* Cart Header */
+.cart-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+/* Close Button */
+.close-btn {
+  background: none;
+  border: none;
+  color: black;
+  cursor: pointer;
+}
+
+/* Cart Items */
+.cart-items {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+/* Cart Item */
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+}
+
+/* Cart Image */
+.cart-img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+}
+
+/* Cart Footer */
+.cart-footer {
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* Checkout Button */
+.checkout-btn {
+  background: black;
   color: white;
+  padding: 10px;
+  text-decoration: none;
+  display: inline-block;
 }
 
-.App-link {
-  color: #61dafb;
+/* Search Bar Overlay */
+.search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: white;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Search Box */
+.search-box {
+  width: 80%;
+  max-width: 500px;
+}
+
+/* Search Input */
+.search-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+}
+
+/* Badge for the Cart Icon */
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  background-color: red;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.chatbot-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #000;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.chatbot-window {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 320px;
+  background: white;
+  color: black;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.chatbot-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background: black;
+  color: white;
+  font-weight: bold;
+}
+
+.chatbot-messages {
+  padding: 10px;
+  height: 300px;
+  overflow-y: auto;
+}
+
+.user-msg {
+  background: #007bff;
+  color: white;
+  padding: 8px;
+  border-radius: 10px;
+  align-self: flex-end;
+}
+
+.bot-msg {
+  background: #f1f1f1;
+  padding: 8px;
+  border-radius: 10px;
+  align-self: flex-start;
+}
+
+.chatbot-input {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.chatbot-input input {
+  flex-grow: 1;
+  padding: 8px;
+  border: none;
+}
+
+.chatbot-input button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
 }
