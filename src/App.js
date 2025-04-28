@@ -3,6 +3,8 @@ import React, { useState, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";  // Import Bootstrap JS for collapse
+
 import HomePage from "./pages/HomePage";
 import ShopPage from "./pages/ShopPage";
 import TrendingPage from "./pages/TrendingPage";
@@ -14,9 +16,11 @@ import OrdersPage from "./pages/OrdersPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import OrderDetails from "./pages/OrderDetails";
 import ProfilePage from "./pages/ProfilePage";
+
 import CartProvider, { CartContext } from "./context/CartContext";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
-import SearchProvider, { SearchContext } from "./context/SearchContext"; // ✅ Added Search Context
+import SearchProvider, { SearchContext } from "./context/SearchContext";
+
 import { FaUser, FaSearch, FaShoppingCart } from "react-icons/fa";
 import "@fontsource/poppins";
 import SlideCart from "./components/SlideCart";
@@ -30,16 +34,29 @@ function NavigationBar({ setCartOpen, setSearchOpen }) {
   const itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
 
   const handleSearchClick = () => {
-    setSearchTerm(""); // Clear previous search
+    setSearchTerm("");
     setSearchOpen(true);
   };
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-      <Link className="navbar-brand fw-bold" to="/">
-        AMIGOS
-      </Link>
-      <div className="collapse navbar-collapse justify-content-end">
+      <Link className="navbar-brand fw-bold" to="/">AMIGOS</Link>
+
+      {/* Toggler for small screens */}
+      <button
+        className="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navItems"
+        aria-controls="navItems"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span className="navbar-toggler-icon" />
+      </button>
+
+      {/* Collapsible items */}
+      <div className="collapse navbar-collapse justify-content-end" id="navItems">
         <ul className="navbar-nav">
           <li className="nav-item">
             {!user ? (
@@ -82,7 +99,7 @@ function AppContent() {
 
   return (
     <CartProvider>
-      <SearchProvider> {/* ✅ Wrap inside SearchProvider */}
+      <SearchProvider>
         <Router>
           <motion.div className="bg-black text-white min-vh-100" style={{ fontFamily: "Poppins, sans-serif" }}>
             <NavigationBar setCartOpen={setCartOpen} setSearchOpen={setSearchOpen} />
