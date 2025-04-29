@@ -1,19 +1,23 @@
-// /api/create-checkout-session.js
-import Stripe from "stripe";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// api/create-checkout-session.js
+const Stripe = require("stripe");
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).end("Method Not Allowed");
+    return res.status(405).json({ error: "Method Not Allowed" });
   }
+
   const { items, shippingInfo, userId } = req.body;
+  if (!items || !Array.isArray(items)) {
+    return res.status(400).json({ error: "Invalid items payload" });
+  }
 
   try {
-    const line_items = items.map(item => ({
+    const line_items = items.map((item) => ({
       price_data: {
         currency: "usd",
-        product_data: { name: item.name },
+        product_data: { name: item.name || "Item" },
         unit_amount: Math.round(parseFloat(item.price) * 100),
       },
       quantity: item.quantity || 1,
@@ -31,9 +35,9 @@ export default async function handler(req, res) {
       },
     });
 
-    res.status(200).json({ id: session.id });
+    return res.status(200).json({ id: session.id });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    console.error("Stripe session error:", err);
+    return res.status(500).json({ error: err.message });
   }
-}
+};
