@@ -1,9 +1,9 @@
 // src/App.js
 import React, { useState, useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";  // Import Bootstrap JS for collapse
+import "bootstrap/dist/js/bootstrap.bundle.min.js"; // Import Bootstrap JS for collapse
 
 import HomePage from "./pages/HomePage";
 import ShopPage from "./pages/ShopPage";
@@ -41,8 +41,6 @@ function NavigationBar({ setCartOpen, setSearchOpen }) {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
       <Link className="navbar-brand fw-bold" to="/">AMIGOS</Link>
-
-      {/* Toggler for small screens */}
       <button
         className="navbar-toggler"
         type="button"
@@ -55,7 +53,6 @@ function NavigationBar({ setCartOpen, setSearchOpen }) {
         <span className="navbar-toggler-icon" />
       </button>
 
-      {/* Collapsible items */}
       <div className="collapse navbar-collapse justify-content-end" id="navItems">
         <ul className="navbar-nav">
           <li className="nav-item">
@@ -96,12 +93,16 @@ function NavigationBar({ setCartOpen, setSearchOpen }) {
 function AppContent() {
   const [cartOpen, setCartOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const { user } = useContext(AuthContext);
 
   return (
     <CartProvider>
       <SearchProvider>
         <Router>
-          <motion.div className="bg-black text-white min-vh-100" style={{ fontFamily: "Poppins, sans-serif" }}>
+          <motion.div
+            className="bg-black text-white min-vh-100"
+            style={{ fontFamily: "Poppins, sans-serif" }}
+          >
             <NavigationBar setCartOpen={setCartOpen} setSearchOpen={setSearchOpen} />
             <Routes>
               <Route path="/" element={<HomePage />} />
@@ -112,7 +113,17 @@ function AppContent() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/orders" element={<OrdersPage />} />
-              <Route path="/admin" element={<AdminDashboard />} />
+              {/* Protected Admin Route */}
+              <Route
+                path="/admin"
+                element={
+                  user && user.role === "admin" ? (
+                    <AdminDashboard />
+                  ) : (
+                    <Navigate to="/login" replace />
+                  )
+                }
+              />
               <Route path="/orders/:orderId" element={<OrderDetails />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Routes>
