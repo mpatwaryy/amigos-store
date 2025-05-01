@@ -33,7 +33,7 @@ const CheckoutPage = () => {
     if (orderId) clearCart();
   }, [orderId, clearCart]);
 
-  // Show success screen
+  // Success screen
   if (orderId) {
     return (
       <div
@@ -70,13 +70,23 @@ const CheckoutPage = () => {
     );
   }
 
-  // Handle form field changes
+  // Helper to normalize price (string "$29.99" or number 29.99)
+  const getNumericPrice = (p) =>
+    typeof p === "number" ? p : parseFloat(String(p).replace(/[^0-9.-]+/g, ""));
+
+  // Calculate total
+  const totalAmount = cart.reduce(
+    (sum, i) => sum + getNumericPrice(i.price) * (i.quantity || 1),
+    0
+  );
+
+  // Form field change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  // Kick off the checkout process
+  // Start checkout
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return setError("Please log in first.");
@@ -85,7 +95,7 @@ const CheckoutPage = () => {
     setError("");
 
     try {
-      // 1) Create order in Firestore and get its ID
+      // 1) create order doc
       const orderRef = await addDoc(collection(db, "orders"), {
         userId: user.uid,
         ...formData,
@@ -93,17 +103,14 @@ const CheckoutPage = () => {
           productId: i.id,
           name: i.name,
           quantity: i.quantity || 1,
-          price: i.price,
+          price: getNumericPrice(i.price),
         })),
-        totalAmount: cart.reduce(
-          (sum, i) => sum + parseFloat(i.price.replace("$", "")) * (i.quantity || 1),
-          0
-        ),
+        totalAmount,
         orderDate: serverTimestamp(),
         status: "Pending",
       });
 
-      // 2) Create Stripe session
+      // 2) call Stripe function
       const stripe = await stripePromise;
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -117,7 +124,7 @@ const CheckoutPage = () => {
       });
       const { id: sessionId } = await res.json();
 
-      // 3) Redirect to Stripe Checkout, include ?orderId=<id> on success
+      // 3) redirect to Stripe Checkout
       await stripe.redirectToCheckout({
         sessionId,
         successUrl: `${window.location.origin}/checkout?orderId=${orderRef.id}`,
@@ -167,25 +174,20 @@ const CheckoutPage = () => {
               key={i.id}
               className="d-flex justify-content-between bg-secondary text-white p-2 my-1 rounded"
             >
-              <span>{i.name} × {i.quantity || 1}</span>
-              <span>${(
-                parseFloat(i.price.replace("$", "")) *
-                (i.quantity || 1)
-              ).toFixed(2)}</span>
+              <span>
+                {i.name} × {i.quantity || 1}
+              </span>
+              <span>
+                ${(
+                  getNumericPrice(i.price) * (i.quantity || 1)
+                ).toFixed(2)}
+              </span>
             </div>
           ))}
+
           <div className="d-flex justify-content-between mt-3">
             <strong>Total:</strong>
-            <strong>
-              $
-              {cart
-                .reduce(
-                  (sum, i) =>
-                    sum + parseFloat(i.price.replace("$", "")) * (i.quantity || 1),
-                  0
-                )
-                .toFixed(2)}
-            </strong>
+            <strong>${totalAmount.toFixed(2)}</strong>
           </div>
 
           <Button
