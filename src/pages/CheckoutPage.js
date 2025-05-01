@@ -1,7 +1,6 @@
 // src/pages/CheckoutPage.js
-
-import React, { useState, useContext, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button, Form, Container, Alert } from "react-bootstrap";
 import { loadStripe } from "@stripe/stripe-js";
 import { CartContext } from "../context/CartContext";
@@ -13,14 +12,10 @@ const stripePromise = loadStripe(
   "pk_test_51RJK8g4E6VMAUPzZy05zTwG3ebjbg7vAErcOUGjHnWreQP6sVhqObpnc1lPQDOWsgF2NRlaMyek22BCyQ4CK8QmG00QbCrnKw4"
 );
 
-const CheckoutPage = () => {
+export default function CheckoutPage() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { cart, clearCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
-
-  // Detect if Stripe just redirected us back with ?orderId=
-  const orderId = new URLSearchParams(location.search).get("orderId");
 
   const [formData, setFormData] = useState({
     name: "", email: "", address: "", city: "", state: "", zip: ""
@@ -28,84 +23,48 @@ const CheckoutPage = () => {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // Clear the cart if we're showing the success screen
-  useEffect(() => {
-    if (orderId) clearCart();
-  }, [orderId, clearCart]);
+  // turn "$29.99" or number into a float
+  const getPrice = p =>
+    typeof p === "number"
+      ? p
+      : parseFloat(String(p).replace(/[^0-9.-]+/g, ""));
 
-  // Success screen
-  if (orderId) {
-    return (
-      <div
-        style={{
-          backgroundImage: "url('/images/hero-bg.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Container
-          className="text-white text-center"
-          style={{
-            maxWidth: "500px",
-            backgroundColor: "rgba(0,0,0,0.75)",
-            padding: "3rem",
-            borderRadius: "8px",
-          }}
-        >
-          <h2>Thank you! 🎉</h2>
-          <p>Your order has been placed successfully.</p>
-          <p><strong>Order # {orderId}</strong></p>
-          <Button variant="light" onClick={() => navigate("/orders")}>
-            View My Orders
-          </Button>
-        </Container>
-      </div>
-    );
-  }
-
-  // Helper to get numeric price whether string or number
-  const getNumericPrice = (p) =>
-    typeof p === "number" ? p : parseFloat(String(p).replace(/[^0-9.-]+/g, ""));
-
-  // Compute total
+  // cart total
   const totalAmount = cart.reduce(
-    (sum, i) => sum + getNumericPrice(i.price) * (i.quantity || 1),
+    (sum, i) => sum + getPrice(i.price) * (i.quantity || 1),
     0
   );
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
-    setFormData((f) => ({ ...f, [name]: value }));
+    setFormData(f => ({ ...f, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     if (!user) return setError("Please log in first.");
-    if (cart.length === 0) return setError("Your cart is empty.");
+    if (!cart.length) return setError("Your cart is empty.");
+
     setProcessing(true);
     setError("");
 
     try {
-      // 1) Create Firestore order
+      // 1) record order in Firestore
       const orderRef = await addDoc(collection(db, "orders"), {
         userId: user.uid,
         ...formData,
-        items: cart.map((i) => ({
+        items: cart.map(i => ({
           productId: i.id,
           name: i.name,
           quantity: i.quantity || 1,
-          price: getNumericPrice(i.price),
+          price: getPrice(i.price),
         })),
         totalAmount,
         orderDate: serverTimestamp(),
         status: "Pending",
       });
 
-      // 2) Call your serverless Stripe session creator
+      // 2) create Stripe Checkout Session via our API
       const stripe = await stripePromise;
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -119,10 +78,10 @@ const CheckoutPage = () => {
       });
       const { id: sessionId } = await res.json();
 
-      // 3) Redirect using only sessionId
+      // 3) redirect to Stripe
       await stripe.redirectToCheckout({ sessionId });
     } catch (err) {
-      console.error("Checkout error:", err);
+      console.error("Checkout failed:", err);
       setError("Checkout failed: " + err.message);
       setProcessing(false);
     }
@@ -146,11 +105,13 @@ const CheckoutPage = () => {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          {["name","email","address","city","state","zip"].map((key) => (
+          {["name","email","address","city","state","zip"].map(key => (
             <Form.Group className="mb-3" controlId={key} key={key}>
-              <Form.Label>{key[0].toUpperCase()+key.slice(1)}</Form.Label>
+              <Form.Label>
+                {key.charAt(0).toUpperCase() + key.slice(1)}
+              </Form.Label>
               <Form.Control
-                type={key==="email"?"email":"text"}
+                type={key === "email" ? "email" : "text"}
                 name={key}
                 value={formData[key]}
                 onChange={handleChange}
@@ -160,13 +121,13 @@ const CheckoutPage = () => {
           ))}
 
           <h5 className="mt-4">Order Summary</h5>
-          {cart.map((i) => (
+          {cart.map(i => (
             <div
               key={i.id}
               className="d-flex justify-content-between bg-secondary text-white p-2 my-1 rounded"
             >
-              <span>{i.name} × {i.quantity||1}</span>
-              <span>${(getNumericPrice(i.price)*(i.quantity||1)).toFixed(2)}</span>
+              <span>{i.name} × {i.quantity || 1}</span>
+              <span>${(getPrice(i.price) * (i.quantity || 1)).toFixed(2)}</span>
             </div>
           ))}
 
@@ -187,6 +148,4 @@ const CheckoutPage = () => {
       </Container>
     </div>
   );
-};
-
-export default CheckoutPage;
+}

@@ -1,9 +1,15 @@
 // src/App.js
 import React, { useState, useContext } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  Navigate
+} from "react-router-dom";
 import { motion } from "framer-motion";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js"; // Import Bootstrap JS for collapse
+import "bootstrap/dist/js/bootstrap.bundle.min.js"; // for the navbar collapse
 
 import HomePage from "./pages/HomePage";
 import ShopPage from "./pages/ShopPage";
@@ -16,6 +22,7 @@ import OrdersPage from "./pages/OrdersPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import OrderDetails from "./pages/OrderDetails";
 import ProfilePage from "./pages/ProfilePage";
+import OrderSuccessPage from "./pages/OrderSuccessPage";
 
 import CartProvider, { CartContext } from "./context/CartContext";
 import AuthProvider, { AuthContext } from "./context/AuthContext";
@@ -31,12 +38,7 @@ function NavigationBar({ setCartOpen, setSearchOpen }) {
   const { user, logout } = useContext(AuthContext);
   const { cart } = useContext(CartContext);
   const { setSearchTerm } = useContext(SearchContext);
-  const itemCount = cart.reduce((total, item) => total + (item.quantity || 1), 0);
-
-  const handleSearchClick = () => {
-    setSearchTerm("");
-    setSearchOpen(true);
-  };
+  const itemCount = cart.reduce((sum, i) => sum + (i.quantity || 1), 0);
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark px-4">
@@ -62,12 +64,15 @@ function NavigationBar({ setCartOpen, setSearchOpen }) {
               </Link>
             ) : (
               <span className="text-white me-3">
-                Hi, {user.firstName || user.email?.split("@")[0]}
+                Hi, {user.firstName || user.email.split("@")[0]}
               </span>
             )}
           </li>
           <li className="nav-item">
-            <button className="btn btn-link text-white" onClick={handleSearchClick}>
+            <button
+              className="btn btn-link text-white"
+              onClick={() => { setSearchTerm(""); setSearchOpen(true); }}
+            >
               <FaSearch size={20} />
             </button>
           </li>
@@ -104,6 +109,7 @@ function AppContent() {
             style={{ fontFamily: "Poppins, sans-serif" }}
           >
             <NavigationBar setCartOpen={setCartOpen} setSearchOpen={setSearchOpen} />
+
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/shop" element={<ShopPage />} />
@@ -113,20 +119,22 @@ function AppContent() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/orders" element={<OrdersPage />} />
-              {/* Protected Admin Route */}
+              <Route path="/success" element={<OrderSuccessPage />} />
+
+              {/* Admin protected */}
               <Route
                 path="/admin"
                 element={
-                  user && user.role === "admin" ? (
-                    <AdminDashboard />
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
+                  user && user.role === "admin"
+                    ? <AdminDashboard />
+                    : <Navigate to="/login" replace />
                 }
               />
+
               <Route path="/orders/:orderId" element={<OrderDetails />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Routes>
+
             {cartOpen && <SlideCart isOpen={cartOpen} onClose={() => setCartOpen(false)} />}
             {searchOpen && <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />}
           </motion.div>
@@ -136,12 +144,10 @@ function AppContent() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <AppContent />
     </AuthProvider>
   );
 }
-
-export default App;
