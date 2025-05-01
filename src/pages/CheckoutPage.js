@@ -19,7 +19,7 @@ const CheckoutPage = () => {
   const { cart, clearCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
 
-  // If they just returned from Stripe with ?orderId=XYZ
+  // Detect if Stripe just redirected us back with ?orderId=
   const orderId = new URLSearchParams(location.search).get("orderId");
 
   const [formData, setFormData] = useState({
@@ -28,7 +28,7 @@ const CheckoutPage = () => {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // Clear the cart when we show the success screen
+  // Clear the cart if we're showing the success screen
   useEffect(() => {
     if (orderId) clearCart();
   }, [orderId, clearCart]);
@@ -45,7 +45,6 @@ const CheckoutPage = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "2rem",
         }}
       >
         <Container
@@ -59,9 +58,7 @@ const CheckoutPage = () => {
         >
           <h2>Thank you! 🎉</h2>
           <p>Your order has been placed successfully.</p>
-          <p>
-            <strong>Order # {orderId}</strong>
-          </p>
+          <p><strong>Order # {orderId}</strong></p>
           <Button variant="light" onClick={() => navigate("/orders")}>
             View My Orders
           </Button>
@@ -70,23 +67,21 @@ const CheckoutPage = () => {
     );
   }
 
-  // Helper to normalize price (string "$29.99" or number 29.99)
+  // Helper to get numeric price whether string or number
   const getNumericPrice = (p) =>
     typeof p === "number" ? p : parseFloat(String(p).replace(/[^0-9.-]+/g, ""));
 
-  // Calculate total
+  // Compute total
   const totalAmount = cart.reduce(
     (sum, i) => sum + getNumericPrice(i.price) * (i.quantity || 1),
     0
   );
 
-  // Form field change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((f) => ({ ...f, [name]: value }));
   };
 
-  // Start checkout
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return setError("Please log in first.");
@@ -95,7 +90,7 @@ const CheckoutPage = () => {
     setError("");
 
     try {
-      // 1) create order doc
+      // 1) Create Firestore order
       const orderRef = await addDoc(collection(db, "orders"), {
         userId: user.uid,
         ...formData,
@@ -110,7 +105,7 @@ const CheckoutPage = () => {
         status: "Pending",
       });
 
-      // 2) call Stripe function
+      // 2) Call your serverless Stripe session creator
       const stripe = await stripePromise;
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
@@ -124,12 +119,8 @@ const CheckoutPage = () => {
       });
       const { id: sessionId } = await res.json();
 
-      // 3) redirect to Stripe Checkout
-      await stripe.redirectToCheckout({
-        sessionId,
-        successUrl: `${window.location.origin}/checkout?orderId=${orderRef.id}`,
-        cancelUrl: `${window.location.origin}/checkout`,
-      });
+      // 3) Redirect using only sessionId
+      await stripe.redirectToCheckout({ sessionId });
     } catch (err) {
       console.error("Checkout error:", err);
       setError("Checkout failed: " + err.message);
@@ -155,11 +146,11 @@ const CheckoutPage = () => {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          {["name", "email", "address", "city", "state", "zip"].map((key) => (
+          {["name","email","address","city","state","zip"].map((key) => (
             <Form.Group className="mb-3" controlId={key} key={key}>
-              <Form.Label>{key[0].toUpperCase() + key.slice(1)}</Form.Label>
+              <Form.Label>{key[0].toUpperCase()+key.slice(1)}</Form.Label>
               <Form.Control
-                type={key === "email" ? "email" : "text"}
+                type={key==="email"?"email":"text"}
                 name={key}
                 value={formData[key]}
                 onChange={handleChange}
@@ -174,14 +165,8 @@ const CheckoutPage = () => {
               key={i.id}
               className="d-flex justify-content-between bg-secondary text-white p-2 my-1 rounded"
             >
-              <span>
-                {i.name} × {i.quantity || 1}
-              </span>
-              <span>
-                ${(
-                  getNumericPrice(i.price) * (i.quantity || 1)
-                ).toFixed(2)}
-              </span>
+              <span>{i.name} × {i.quantity||1}</span>
+              <span>${(getNumericPrice(i.price)*(i.quantity||1)).toFixed(2)}</span>
             </div>
           ))}
 
