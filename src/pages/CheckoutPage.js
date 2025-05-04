@@ -23,13 +23,11 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [processing, setProcessing] = useState(false);
 
-  // turn "$29.99" or number into a float
   const getPrice = p =>
     typeof p === "number"
       ? p
       : parseFloat(String(p).replace(/[^0-9.-]+/g, ""));
 
-  // cart total
   const totalAmount = cart.reduce(
     (sum, i) => sum + getPrice(i.price) * (i.quantity || 1),
     0
@@ -49,7 +47,6 @@ export default function CheckoutPage() {
     setError("");
 
     try {
-      // 1) record order in Firestore
       const orderRef = await addDoc(collection(db, "orders"), {
         userId: user.uid,
         ...formData,
@@ -64,9 +61,9 @@ export default function CheckoutPage() {
         status: "Pending",
       });
 
-      // 2) create Stripe Checkout Session via our API
       const stripe = await stripePromise;
-      const res = await fetch("/api/create-checkout-session", {
+
+      const res = await fetch("https://amigos-store.vercel.app/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -76,9 +73,9 @@ export default function CheckoutPage() {
           orderId: orderRef.id,
         }),
       });
+
       const { id: sessionId } = await res.json();
 
-      // 3) redirect to Stripe
       await stripe.redirectToCheckout({ sessionId });
     } catch (err) {
       console.error("Checkout failed:", err);
@@ -105,7 +102,7 @@ export default function CheckoutPage() {
         {error && <Alert variant="danger">{error}</Alert>}
 
         <Form onSubmit={handleSubmit}>
-          {["name","email","address","city","state","zip"].map(key => (
+          {["name", "email", "address", "city", "state", "zip"].map(key => (
             <Form.Group className="mb-3" controlId={key} key={key}>
               <Form.Label>
                 {key.charAt(0).toUpperCase() + key.slice(1)}
